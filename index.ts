@@ -66,14 +66,27 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	cmd("fleet:list", {
-		description: "List fleet nodes and their online status",
+		description: "List fleet nodes from config (instant, no probing)",
 		handler: async (_args, ctx) => {
+			const configs = registry.listConfig();
+			const lines = configs.map(
+				(c) =>
+					`${c.id}  [${c.adapter}/${c.transport}]  ${c.host ?? c.url ?? ""}${c.cwd ? "  " + c.cwd : ""}`,
+			);
+			ctx.ui.notify(`Fleet (${configs.length}):\n${lines.join("\n")}\n(用 /fleetprobe 探测在线状态)`, "info");
+		},
+	});
+
+	cmd("fleet:probe", {
+		description: "Probe fleet nodes online status (shell nodes SSH-tested, takes a few sec)",
+		handler: async (_args, ctx) => {
+			ctx.ui.notify("探测中...", "info");
 			const nodes = await registry.listNodes();
 			const lines = nodes.map(
 				(n) =>
-					`${n.status.online ? "●" : "○"} ${n.id}  [${n.status.kind}]  caps=[${n.status.capabilities.join(", ")}]`,
+					`${n.status.online ? "●" : "○"} ${n.id}  [${n.status.kind}]  caps=[${n.status.capabilities.join(", ")}]${n.status.detail?.note ? "  " + n.status.detail.note : ""}`,
 			);
-			ctx.ui.notify(`Fleet (${nodes.length}):\n${lines.join("\n")}`, "info");
+			ctx.ui.notify(`Fleet 在线状态:\n${lines.join("\n")}`, "info");
 		},
 	});
 
