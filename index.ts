@@ -1,4 +1,4 @@
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI, ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
 import { Box, Text } from "@earendil-works/pi-tui";
 import { FleetRegistry } from "./src/registry.js";
 import { registerFleetTools } from "./src/tools.js";
@@ -46,8 +46,16 @@ export default function (pi: ExtensionAPI) {
 		}
 	});
 
-	// /fleet:reload —— 热加载节点配置
-	pi.registerCommand("fleet:reload", {
+	// 命令注册 helper：同时注册 /fleet:xxx 和无冒号别名 /fleetxxx（漏冒号也能用）
+	const cmd = (
+		name: string,
+		opts: { description: string; handler: (args: string, ctx: ExtensionCommandContext) => Promise<void> },
+	) => {
+		pi.registerCommand(name, opts);
+		pi.registerCommand(name.replace(":", ""), opts);
+	};
+
+	cmd("fleet:reload", {
 		description: "Reload fleet.json node registry without restarting pi",
 		handler: async (_args, ctx) => {
 			await registry.close();
@@ -57,8 +65,7 @@ export default function (pi: ExtensionAPI) {
 		},
 	});
 
-	// /fleet:list —— 查看节点状态
-	pi.registerCommand("fleet:list", {
+	cmd("fleet:list", {
 		description: "List fleet nodes and their online status",
 		handler: async (_args, ctx) => {
 			const nodes = await registry.listNodes();
@@ -70,9 +77,8 @@ export default function (pi: ExtensionAPI) {
 		},
 	});
 
-	// /fleet:exec <node> <command> —— 直接在节点跑命令（不经 LLM）
-	pi.registerCommand("fleet:exec", {
-		description: "直接在节点执行命令（不经 LLM）。用法: /fleet:exec <node> <command>",
+	cmd("fleet:exec", {
+		description: "直接在节点执行命令（不经 LLM）。用法: /fleet:exec <node> <command>（或 /fleetexec）",
 		handler: async (args, ctx) => {
 			const trimmed = (args ?? "").trim();
 			const sp = trimmed.indexOf(" ");
@@ -81,16 +87,16 @@ export default function (pi: ExtensionAPI) {
 				return;
 			}
 			const node = trimmed.slice(0, sp);
-			const cmd = trimmed.slice(sp + 1);
+			const command = trimmed.slice(sp + 1);
 			try {
 				const n = await registry.getNode(node);
 				if (!n.exec) {
 					ctx.ui.notify(`节点 ${node} 无 exec 能力`, "error");
 					return;
 				}
-				const r = await n.exec(cmd, { timeout: 300 });
+				const r = await n.exec(command, { timeout: 300 });
 				const out = (
-					`$ ${cmd}  [${node}] exit=${r.exitCode}\n${r.stdout}` +
+					`$ ${command}  [${node}] exit=${r.exitCode}\n${r.stdout}` +
 					(r.stderr ? `\n[stderr]\n${r.stderr}` : "")
 				).slice(0, 2000);
 				ctx.ui.notify(out, r.exitCode === 0 ? "info" : "error");
@@ -100,9 +106,9 @@ export default function (pi: ExtensionAPI) {
 		},
 	});
 
-	// /fleet:prompt <node> <task> —— 直接给远程 pi 派任务，实时显示过程 + 结果卡片
-	pi.registerCommand("fleet:prompt", {
-		description: "直接给远程 pi 节点派任务（不经 controller LLM），显示过程与结果。用法: /fleet:prompt <node> <task>",
+	cmd("fleet:prompt", {
+		description:
+			"直接给远程 pi 节点派任务（不经 controller LLM），显示过程与结果。用法: /fleet:prompt <node> <task>（或 /fleetprompt）",
 		handler: async (args, ctx) => {
 			const trimmed = (args ?? "").trim();
 			const sp = trimmed.indexOf(" ");
@@ -135,9 +141,8 @@ export default function (pi: ExtensionAPI) {
 		},
 	});
 
-	// /fleet:context <node> —— 查看远程 pi 的对话上下文（历史消息）
-	pi.registerCommand("fleet:context", {
-		description: "查看远程 pi 节点的对话上下文（历史消息）。用法: /fleet:context <node>",
+	cmd("fleet:context", {
+		description: "查看远程 pi 节点的对话上下文（历史消息）。用法: /fleet:context <node>（或 /fleetcontext）",
 		handler: async (args, ctx) => {
 			const node = (args ?? "").trim();
 			if (!node) {
