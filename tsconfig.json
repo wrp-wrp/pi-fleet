@@ -13,5 +13,5 @@
     "verbatimModuleSyntax": false,
     "types": ["node"]
   },
-  "include": ["index.ts", "src/**/*.ts"]
+  "include": ["index.ts", "src/**/*.ts", "web/**/*.ts"]
 }
