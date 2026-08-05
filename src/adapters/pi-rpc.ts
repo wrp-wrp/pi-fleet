@@ -118,10 +118,11 @@ export class RpcClient {
 	 * 基础实现：收集 message_end 的文本，等 agent_settled 完成。
 	 * TODO(Phase 1): 完善 tool 执行中间态转发、错误恢复。
 	 */
-	prompt(message: string, opts: AgentPromptOptions = {}): Promise<string> {
+	prompt(message: string, opts: AgentPromptOptions = {}, onProgress?: (event: unknown) => void): Promise<string> {
 		return new Promise((resolve, reject) => {
 			let finalText = "";
 			const onEvent = (evt: RpcEvent) => {
+				onProgress?.(evt);
 				const t = evt.type as string;
 				if (t === "message_end") {
 					const msg = evt.message as { role?: string } | undefined;
@@ -165,6 +166,11 @@ export class RpcClient {
 	}
 	getState(): Promise<unknown> {
 		return this.send({ type: "get_state" }).then((r) => r as unknown);
+	}
+	getMessages(): Promise<unknown[]> {
+		return this.send({ type: "get_messages" }).then(
+			(r) => ((r as { data?: { messages?: unknown[] } }).data?.messages) ?? [],
+		);
 	}
 
 	close(): void {
@@ -215,11 +221,12 @@ export class PiRpcAdapter implements Adapter {
 		const client = new RpcClient(child);
 
 		const agent: AgentOp = {
-			prompt: (msg, opts) => client.prompt(msg, opts),
+			prompt: (msg, opts, onProgress) => client.prompt(msg, opts, onProgress),
 			steer: (msg) => client.steer(msg),
 			followUp: (msg) => client.followUp(msg),
 			abort: () => client.abort(),
 			getState: () => client.getState(),
+			getMessages: () => client.getMessages(),
 		};
 
 		const node: RemoteNode = {

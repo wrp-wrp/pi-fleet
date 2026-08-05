@@ -25,6 +25,17 @@ pi-fleet 把本地 pi 扩展成控制平面，统一调度多台机器、远程 
    - `robot` 节点 → `robot_action`（Phase 2）
 3. `fleet_exec` 对纯 pi-rpc 节点会自动降级，委托给远程 agent 执行命令。
 
+## 直接操作（不经 controller LLM）
+
+斜杠命令，敲下即执行：
+
+- `/fleet:exec <node> <command>` — 直接在节点跑命令
+- `/fleet:prompt <node> <task>` — 直接给远程 pi 派任务，**实时显示它的工具调用 + 结果卡片**
+- `/fleet:context <node>` — **查看远程 pi 的对话上下文**（历史消息）
+- `/fleet:list` / `/fleet:reload`
+
+操作远程 pi 时，先用 `/fleet:context` 看它的上下文，再用 `/fleet:prompt` 继续。远程 pi 的过程（调了什么工具）和结果会显示在 transcript 里（fleet-remote 卡片），便于对比和决策。
+
 ## 节点配置
 
 节点定义在 `~/.pi/agent/fleet.json`。结构见 `examples/fleet.json`。

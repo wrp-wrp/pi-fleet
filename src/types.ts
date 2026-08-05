@@ -98,8 +98,8 @@ export interface AgentPromptOptions {
 }
 
 export interface AgentOp {
-	/** 派发任务，阻塞至远程 agent 完成，回传最终文本 */
-	prompt(message: string, opts?: AgentPromptOptions): Promise<string>;
+	/** 派发任务，阻塞至远程 agent 完成，回传最终文本。onProgress 转发远程事件（思考流/工具调用） */
+	prompt(message: string, opts?: AgentPromptOptions, onProgress?: (event: unknown) => void): Promise<string>;
 	/** 插入 steering 消息（agent 运行中调整方向） */
 	steer(message: string): Promise<void>;
 	/** 排队后续消息（agent 完成后处理） */
@@ -108,6 +108,8 @@ export interface AgentOp {
 	abort(): Promise<void>;
 	/** 查询远程 agent 状态 */
 	getState(): Promise<unknown>;
+	/** 拉取远程 session 的对话历史（AgentMessage[]） */
+	getMessages(): Promise<unknown[]>;
 }
 
 /** 机器人能力——具体动作由 adapter 按 SDK 填充，这里只占位 */

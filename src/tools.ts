@@ -122,7 +122,13 @@ export function registerFleetTools(pi: ExtensionAPI, registry: FleetRegistry): v
 				);
 			}
 			onUpdate?.(textResult(`→ delegating to ${params.node}…`, { phase: "delegating" }));
-			const result = await node.agent.prompt(params.task);
+			const result = await node.agent.prompt(params.task, {}, (evt: unknown) => {
+				const e = evt as { type?: string; toolName?: string; args?: unknown };
+				if (e.type === "tool_execution_start" && e.toolName) {
+					const argSummary = JSON.stringify(e.args ?? {}).slice(0, 100);
+					onUpdate?.(textResult(`[${params.node}] ▸ ${e.toolName} ${argSummary}`, { phase: "remote_tool" }));
+				}
+			});
 			return textResult(`[${params.node}]\n${result}`, { node: params.node });
 		},
 	});

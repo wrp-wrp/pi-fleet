@@ -80,7 +80,14 @@ SSH 节点依赖免密登录（SSH key）。改配置后用 `/fleet:reload` 热�
 | `fleet_deploy` | 同步本地文件到节点 |
 | `fleet_node` | 委派智能任务到远程 pi 实例 |
 
-命令：`/fleet:reload`（重载配置）、`/fleet:list`（查看状态）。
+斜杠命令（直接操作，不经 LLM）：
+
+| 命令 | 作用 |
+|------|------|
+| `/fleet:exec <node> <cmd>` | 直接在节点跑命令 |
+| `/fleet:prompt <node> <task>` | 给远程 pi 派任务，显示过程+结果卡片 |
+| `/fleet:context <node>` | 查看远程 pi 的对话上下文（历史） |
+| `/fleet:list` / `/fleet:reload` | 查看状态 / 重载配置 |
 
 ## 架构
 

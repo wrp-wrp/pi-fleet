@@ -1,4 +1,5 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { Box, Text } from "@earendil-works/pi-tui";
 import { FleetRegistry } from "./src/registry.js";
 import { registerFleetTools } from "./src/tools.js";
 
@@ -13,6 +14,22 @@ export default function (pi: ExtensionAPI) {
 
 	// 注册 fleet_* 工具给 LLM
 	registerFleetTools(pi, registry);
+
+	// 渲染远程 pi 交互卡片（不进 controller LLM 上下文，仅 transcript 显示）
+	pi.registerEntryRenderer<{ node: string; title: string; body: string; tools?: string[] }>(
+		"fleet-remote",
+		(entry, { expanded }, theme) => {
+			const d = entry.data ?? { node: "", title: "", body: "" };
+			const box = new Box(1, 1, (text: string) => theme.bg("customMessageBg", text));
+			box.addChild(new Text(theme.fg("accent", `[${d.node}] ${d.title}`), 0, 0));
+			const preview = expanded ? d.body : (d.body.split("\n")[0] ?? "").slice(0, 100);
+			box.addChild(new Text(theme.fg("dim", preview), 0, 0));
+			if (expanded && d.tools?.length) {
+				box.addChild(new Text(theme.fg("dim", `tools: ${d.tools.join(", ")}`), 0, 0));
+			}
+			return box;
+		},
+	);
 
 	// 启动时加载节点注册表
 	pi.on("session_start", async (_event, ctx) => {
@@ -83,9 +100,9 @@ export default function (pi: ExtensionAPI) {
 		},
 	});
 
-	// /fleet:prompt <node> <task> —— 直接给远程 pi 派任务（不经 controller LLM）
+	// /fleet:prompt <node> <task> —— 直接给远程 pi 派任务，实时显示过程 + 结果卡片
 	pi.registerCommand("fleet:prompt", {
-		description: "直接给远程 pi 节点派任务（不经 controller LLM）。用法: /fleet:prompt <node> <task>",
+		description: "直接给远程 pi 节点派任务（不经 controller LLM），显示过程与结果。用法: /fleet:prompt <node> <task>",
 		handler: async (args, ctx) => {
 			const trimmed = (args ?? "").trim();
 			const sp = trimmed.indexOf(" ");
@@ -101,11 +118,58 @@ export default function (pi: ExtensionAPI) {
 					ctx.ui.notify(`节点 ${node} 无 agent 能力 (非 pi-rpc 节点)`, "error");
 					return;
 				}
+				const tools: string[] = [];
 				ctx.ui.notify(`→ 派发给 ${node} ...`, "info");
-				const result = await n.agent.prompt(task);
-				ctx.ui.notify(`[${node}]\n${result}`.slice(0, 2000), "info");
+				const result = await n.agent.prompt(task, {}, (evt: unknown) => {
+					const e = evt as { type?: string; toolName?: string; args?: unknown };
+					if (e.type === "tool_execution_start" && e.toolName) {
+						tools.push(e.toolName);
+						const arg = JSON.stringify(e.args ?? {}).slice(0, 80);
+						ctx.ui.notify(`[${node}] ▸ ${e.toolName} ${arg}`, "info");
+					}
+				});
+				pi.appendEntry("fleet-remote", { node, title: `任务: ${task.slice(0, 60)}`, body: result, tools });
 			} catch (e) {
 				ctx.ui.notify(`fleet:prompt 失败: ${(e as Error).message}`, "error");
+			}
+		},
+	});
+
+	// /fleet:context <node> —— 查看远程 pi 的对话上下文（历史消息）
+	pi.registerCommand("fleet:context", {
+		description: "查看远程 pi 节点的对话上下文（历史消息）。用法: /fleet:context <node>",
+		handler: async (args, ctx) => {
+			const node = (args ?? "").trim();
+			if (!node) {
+				ctx.ui.notify("用法: /fleet:context <node>", "error");
+				return;
+			}
+			try {
+				const n = await registry.getNode(node);
+				if (!n.agent) {
+					ctx.ui.notify(`节点 ${node} 无 agent 能力 (非 pi-rpc 节点)`, "error");
+					return;
+				}
+				const msgs = (await n.agent.getMessages()) as Array<{
+					role?: string;
+					content?: Array<{ type: string; text?: string }>;
+				}>;
+				const lines: string[] = [];
+				for (const m of msgs) {
+					const role = m.role ?? "?";
+					if (role === "user" || role === "assistant") {
+						const text = (m.content ?? [])
+							.filter((c) => c.type === "text")
+							.map((c) => c.text ?? "")
+							.join(" ")
+							.trim();
+						if (text) lines.push(`${role}: ${text.slice(0, 300)}`);
+					}
+				}
+				const body = lines.length ? lines.join("\n") : "(空 session，尚无对话)";
+				pi.appendEntry("fleet-remote", { node, title: `上下文 (${msgs.length} 条消息)`, body });
+			} catch (e) {
+				ctx.ui.notify(`fleet:context 失败: ${(e as Error).message}`, "error");
 			}
 		},
 	});
