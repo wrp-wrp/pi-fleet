@@ -1,0 +1,53 @@
+{
+  "name": "pi-fleet",
+  "version": "0.1.0",
+  "description": "Distributed pi: manage processes, remote pi instances, and robots across many machines from one controller.",
+  "type": "module",
+  "license": "MIT",
+  "author": "wrp-wrp",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wrp-wrp/pi-fleet.git"
+  },
+  "keywords": [
+    "pi-package",
+    "pi-extension",
+    "pi-fleet",
+    "pi",
+    "distributed",
+    "fleet",
+    "robotics",
+    "coding-agent"
+  ],
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "main": "./index.ts",
+  "files": [
+    "index.ts",
+    "src",
+    "skills",
+    "docs",
+    "README.md",
+    "LICENSE"
+  ],
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ],
+    "skills": [
+      "./skills"
+    ]
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "echo 'no tests yet'",
+    "check": "npm run typecheck"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "^0.83.0",
+    "@types/node": "^22.0.0",
+    "typebox": "1.3.7",
+    "typescript": "^5.6.0"
+  }
+}
