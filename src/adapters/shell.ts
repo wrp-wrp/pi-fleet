@@ -47,7 +47,7 @@ export class ShellAdapter implements Adapter {
 
 			fs: {
 				read: async (p) => {
-					const r = await exec(`base64 ${JSON.stringify(p)}`);
+					const r = await exec(`cat ${JSON.stringify(p)} | base64`);
 					if (r.exitCode !== 0) throw new Error(`fs.read "${p}" failed: ${r.stderr || r.stdout}`);
 					return Buffer.from(r.stdout.trim(), "base64");
 				},
