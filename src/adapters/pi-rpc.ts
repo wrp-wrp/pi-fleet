@@ -193,8 +193,19 @@ export class PiRpcAdapter implements Adapter {
 	async create(id: string, conn: Connection, config: NodeConfig): Promise<RemoteNode> {
 		if (!conn.spawn) throw new Error("pi-rpc adapter: transport missing spawn");
 
-		// 构造远程 pi 启动命令
-		const cmd = ["pi", "--mode", "rpc"];
+		// 构造远程 pi 启动命令，注入环境变量
+		// 值若为 "$VAR" 则从 controller 环境变量解析（key 不落盘 fleet.json）
+		// 以 KEY='val' 前缀元素注入，ssh 远程 shell 解析为进程环境
+		// TODO(安全): key 会短暂出现在远程 ps，后续改用 SendEnv / stdin 传递
+		const cmd: string[] = [];
+		if (config.env) {
+			for (const [k, v] of Object.entries(config.env)) {
+				let val = v;
+				if (typeof v === "string" && v.startsWith("$")) val = process.env[v.slice(1)] ?? "";
+				cmd.push(`${k}='${val}'`);
+			}
+		}
+		cmd.push("pi", "--mode", "rpc");
 		if (config.provider) cmd.push("--provider", config.provider);
 		if (config.model) cmd.push("--model", config.model);
 		if (config.tools?.length) cmd.push("--tools", config.tools.join(","));
