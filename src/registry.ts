@@ -102,11 +102,26 @@ export class FleetRegistry {
 		return node;
 	}
 
-	/** 所有节点状态（尝试实例化并探测） */
+	/** 所有节点状态概览。
+	 *  pi-rpc 节点不主动实例化（SSH 启动远程 pi 很重），只对轻量节点探测在线。
+	 *  pi-rpc 节点标记“按需连接”，实际连接在 getNode()/使用时才建立。 */
 	async listNodes(): Promise<Array<{ id: string; status: NodeStatus }>> {
 		const ids = Object.keys(this.config.nodes);
 		return Promise.all(
 			ids.map(async (id) => {
+				const cfg = this.config.nodes[id];
+				// pi-rpc 实例化需 SSH 启动远程 pi（重），概览时跳过
+				if (cfg.adapter === "pi-rpc") {
+					return {
+						id,
+						status: {
+							online: true,
+							kind: "pi-rpc",
+							capabilities: ["agent"],
+							detail: { host: cfg.host, model: cfg.model, note: "按需连接" },
+						},
+					};
+				}
 				try {
 					const node = await this.getNode(id);
 					const status = await node.status();
@@ -116,7 +131,7 @@ export class FleetRegistry {
 						id,
 						status: {
 							online: false,
-							kind: "unknown",
+							kind: cfg.adapter,
 							capabilities: [],
 							detail: { error: (e as Error).message },
 						},
