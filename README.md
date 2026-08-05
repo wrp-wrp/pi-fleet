@@ -4,7 +4,13 @@
 
 ## 状态
 
-Phase 0（最小可用）：SSH/本地 transport + shell adapter，`fleet_list` / `fleet_exec` / `fleet_deploy` 可用。pi-rpc / robot adapter 为接口骨架。
+Phase 0 + 1 已实战验证（2 台远程机器 jp/sg）：
+
+- ✅ **shell adapter**：SSH/本地多机命令执行、文件部署（`fleet_exec` / `fleet_deploy`）
+- ✅ **pi-rpc adapter**：远程 pi 智能委派（controller 经 SSH+RPC 驱动远程 pi，`fleet_node`）
+- ⏳ **robot adapter**：接口骨架，待 herms 接入
+
+远程 pi 节点的 API key 经环境变量注入（`$VAR` 引用），不落盘 fleet.json。
 
 ## 它解决什么
 
@@ -34,6 +40,25 @@ pi install git:github.com/wrp-wrp/pi-fleet
 ```
 
 SSH 节点依赖免密登录（SSH key）。改配置后用 `/fleet:reload` 热加载，无需重启 pi。
+
+### pi-rpc 节点：环境变量注入
+
+远程 pi 节点的 API key 通过 `env` 字段注入，值用 `$VAR` 引用 controller 的环境变量（**key 不落盘 fleet.json**）：
+
+```jsonc
+"sg": {
+  "transport": "ssh", "host": "root@1.2.3.4", "adapter": "pi-rpc",
+  "provider": "ppio", "model": "deepseek/deepseek-v4-flash-0731",
+  "tools": ["read", "bash"],
+  "env": {
+    "PPIO_API_KEY": "$PPIO_API_KEY",   // 从 controller 环境变量解析
+    "PATH": "/usr/local/bin:/usr/bin:/bin", // 远程 pi 可能不在默认 PATH
+    "PI_OFFLINE": "1"                       // 跳过启动联网检查
+  }
+}
+```
+
+远程机器需先装 pi（`npm install -g @earendil-works/pi-coding-agent`，node ≥ 22）并放入对应的 provider 定义（`~/.pi/agent/models.json`）。
 
 ## 用法
 

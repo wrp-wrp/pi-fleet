@@ -1,17 +1,23 @@
 {
   "nodes": {
-    "gpu-box": {
-      "transport": "ssh",
-      "host": "user@gpu-host",
-      "adapter": "pi-rpc",
-      "model": "anthropic/claude-sonnet-4",
-      "cwd": "/workspace"
-    },
     "edge-1": {
       "transport": "ssh",
       "host": "user@edge1",
       "adapter": "shell",
       "cwd": "/srv/app"
+    },
+    "gpu-box": {
+      "transport": "ssh",
+      "host": "user@gpu-host",
+      "adapter": "pi-rpc",
+      "provider": "anthropic",
+      "model": "claude-sonnet-4",
+      "tools": ["read", "bash", "edit", "write"],
+      "cwd": "/workspace",
+      "env": {
+        "ANTHROPIC_API_KEY": "$ANTHROPIC_API_KEY",
+        "PI_OFFLINE": "1"
+      }
     },
     "herms-01": {
       "transport": "websocket",
@@ -21,7 +27,8 @@
     "local-a": {
       "transport": "local",
       "adapter": "pi-rpc",
-      "model": "openai/gpt-4o"
+      "provider": "openai",
+      "model": "gpt-4o"
     }
   }
 }
