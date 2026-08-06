@@ -1,0 +1,22 @@
+{
+  "$schema": "./schemas/pi-ui-tweaks.schema.json",
+  "enabled": true,
+  "autocompleteAboveInput": true,
+  "bashExecPromptSpacing": true,
+  "anchorInputToBottom": true,
+  "compactModelSelector": true,
+  "hideAutocompleteScrollInfo": true,
+  "hideModelChangeStatus": true,
+  "hideModelProviderHint": true,
+  "hideSlashCommandSourceTags": true,
+  "highlightSelectedModelProvider": true,
+  "inputPromptPrefix": "> ",
+  "neutralBorderColor": true,
+  "pasteCollapseCharThreshold": 1000,
+  "pasteCollapseEnabled": true,
+  "pasteCollapseLineThreshold": 10,
+  "pasteCollapseUseToolExpandKey": true,
+  "preserveCompactionHistory": true,
+  "restoreContentAfterAutocompleteClose": true,
+  "selectedOptionPrefix": "→ "
+}

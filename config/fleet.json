@@ -1,0 +1,18 @@
+{
+  "nodes": {
+    "jp": { "transport": "ssh", "host": "jp", "adapter": "shell" },
+    "sg": {
+      "transport": "ssh",
+      "host": "root@194.156.163.113",
+      "adapter": "pi-rpc",
+      "provider": "ppio",
+      "model": "deepseek/deepseek-v4-flash-0731",
+      "tools": ["read", "bash"],
+      "env": {
+        "PPIO_API_KEY": "$PPIO_API_KEY",
+        "PATH": "/usr/local/bin:/usr/bin:/bin",
+        "PI_OFFLINE": "1"
+      }
+    }
+  }
+}

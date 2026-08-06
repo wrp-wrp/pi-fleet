@@ -1,0 +1,43 @@
+{
+  "default_model": "ppio/deepseek/deepseek-v4-flash",
+  "default_effort": "low",
+  "default_mode": "task",
+  "enable_continue": true,
+  "default_tools": [
+    "read",
+    "bash",
+    "grep",
+    "find",
+    "ls",
+    "write",
+    "edit"
+  ],
+  "max_concurrency": 3,
+  "timeout_ms": 600000,
+  "stall_timeout_ms": 180000,
+  "model_profiles": {
+    "thinker": {
+      "model": "openai-codex/gpt-5.6-sol",
+      "effort": "high"
+    },
+    "coder": {
+      "model": "ppio/deepseek/deepseek-v4-flash-0731",
+      "effort": "medium"
+    },
+    "reviewer": {
+      "model": "openai-codex/gpt-5.6-sol",
+      "effort": "medium"
+    },
+    "analyst": {
+      "model": "ppio/deepseek/deepseek-v4-flash",
+      "effort": "low"
+    },
+    "adhoc-read-image-math": {
+      "model": {
+        "provider": "ppio",
+        "id": "moonshotai/kimi-k3"
+      },
+      "effort": "medium"
+    }
+  }
+}

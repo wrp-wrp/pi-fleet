@@ -1,0 +1,6 @@
+{
+  "$schema": "./schemas/pi-tree.schema.json",
+  "treeTimestampMode": "relative",
+  "treeSelectedPreview": false,
+  "treePreviewFullHeight": true
+}

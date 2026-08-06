@@ -1,0 +1,31 @@
+{
+  "permission": {
+    "*": "allow",
+    "path": {
+      "*": "allow",
+      "*.env": "deny",
+      "*.env.*": "deny",
+      ".env": "deny",
+      "*.pem": "deny",
+      "*.key": "deny",
+      "auth.json": "deny",
+      "credentials.json": "deny",
+      "id_rsa": "deny",
+      "id_ed25519": "deny"
+    },
+    "bash": {
+      "*": "allow",
+      "rm -rf *": "ask",
+      "rm -fr *": "ask",
+      "sudo *": "ask",
+      "git push *": "ask",
+      "git push --force*": "ask",
+      "git push -f *": "ask",
+      "chmod -R *": "ask",
+      "chown -R *": "ask",
+      "dd *": "deny",
+      "mkfs*": "deny"
+    },
+    "external_directory": "ask"
+  }
+}

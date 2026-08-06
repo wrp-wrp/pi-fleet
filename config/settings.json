@@ -1,0 +1,19 @@
+{
+  "lastChangelogVersion": "0.83.0",
+  "theme": "dark",
+  "defaultProvider": "zai-coding-cn",
+  "defaultModel": "glm-5.2",
+  "defaultThinkingLevel": "high",
+  "packages": [
+    "npm:pi-subagents-j0k3r",
+    "npm:pi-memory-extension",
+    "git:github.com/wrp-wrp/pi-fleet",
+    "npm:@zigai/pi-tree",
+    "npm:pi-spark",
+    "npm:@zigai/pi-ui-tweaks",
+    "npm:@demigodmode/pi-web-agent",
+    "npm:@gotgenes/pi-permission-system",
+    "npm:@ahkohd/pi-oyo",
+    "npm:@aaronkyriesenbach/pi-package-manager"
+  ]
+}
