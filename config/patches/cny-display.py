@@ -1,61 +1,89 @@
 #!/usr/bin/env python3
 """
-将 pi 底部状态栏 / 统计 / HTML 导出中的费用符号从 $ 改为 ¥。
-可重复运行（幂等）。每次 `pi update` 后再跑一次即可。
+把 pi + pi-spark 的费用符号 $ 改为 ¥（仅显示）。
+幂等，可重复运行。`pi update` 或 `pi update --extensions` 后重跑一次即可。
 
-原理：pi 没有内置货币符号设置，$ 是硬编码在 dist 里的。
-本脚本把 `${<变量>.toFixed(` 前的货币符号 $ 替换为 ¥，仅改显示，不改逻辑。
+自动探测 pi 安装目录（npm root -g），本机 / nvm / 任何机器通用。
 """
-import os, sys
+import os
+import shutil
+import subprocess
+import sys
+from pathlib import Path
 
-BASE = os.path.expanduser(
-    "~/.npm-global/lib/node_modules/@earendil-works/pi-coding-agent/dist"
-)
+HOME = Path.home()
 
-# 文件 -> 要替换的"成本变量"列表（每个变量在文件里唯一）
-TARGETS = {
-    "modes/interactive/components/footer.js": ["usageTotals.cost"],
-    "modes/interactive/interactive-mode.js": [
-        "miss.missedCost",
-        "stats.cost",
-        "entry.cost",
-        "cacheWaste.missedCost",
-    ],
-    "core/export-html/template.js": ["totalCost"],
-}
+
+def find_pi_dist():
+	"""经 npm root -g 找 pi 的 dist 目录。"""
+	try:
+		out = subprocess.run(
+			["npm", "root", "-g"], capture_output=True, text=True, check=True
+		).stdout.strip()
+		base = Path(out) / "@earendil-works/pi-coding-agent/dist"
+		return base if base.is_dir() else None
+	except Exception:
+		return None
+
+
+# (base, {相对文件: [变量]})，替换 `$${var.toFixed(` → `¥${var.toFixed(`
+def groups():
+	pi_dist = find_pi_dist()
+	g = []
+	if pi_dist:
+		g.append(
+			(
+				pi_dist,
+				{
+					"modes/interactive/components/footer.js": ["usageTotals.cost"],
+					"modes/interactive/interactive-mode.js": [
+						"miss.missedCost",
+						"stats.cost",
+						"entry.cost",
+						"cacheWaste.missedCost",
+					],
+					"core/export-html/template.js": ["totalCost"],
+				},
+			)
+		)
+	else:
+		print("⚠️  找不到 pi dist（npm root -g 下无 pi-coding-agent）")
+	# pi-spark 的 formatCost（footer 用它显示 cost）
+	spark = HOME / ".pi/agent/npm/node_modules/pi-spark/src"
+	if spark.is_dir():
+		g.append((spark, {"utils/format.ts": ["cost"]}))
+	return g
+
+
+def patch_file(path, vars):
+	if not path.exists():
+		print(f"  ⚠️ 缺失: {path}（pi/spark 版本变了？跳过）")
+		return 0
+	bak = path.with_suffix(path.suffix + ".cny.bak")
+	if not bak.exists():
+		shutil.copy(path, bak)
+	txt = path.read_text(encoding="utf-8")
+	n = 0
+	for v in vars:
+		old = f"$${{{v}.toFixed("
+		new = f"¥${{{v}.toFixed("
+		n += txt.count(old)
+		txt = txt.replace(old, new)
+	path.write_text(txt, encoding="utf-8")
+	return n
 
 
 def main():
-    if not os.path.isdir(BASE):
-        print(f"❌ 找不到 pi 安装目录: {BASE}")
-        print("   如果 pi 装在别处，请改本脚本的 BASE。")
-        sys.exit(1)
-
-    total = 0
-    for rel, vars in TARGETS.items():
-        path = os.path.join(BASE, rel)
-        if not os.path.exists(path):
-            print(f"⚠️  缺失文件: {rel}（pi 版本可能变了，跳过）")
-            continue
-        # 仅在无备份时备份，保留原始 $ 版本
-        bak = path + ".cny.bak"
-        if not os.path.exists(bak):
-            import shutil
-            shutil.copy(path, bak)
-        txt = open(path, encoding="utf-8").read()
-        n = 0
-        for v in vars:
-            old = f"$${{{v}.toFixed("
-            new = f"¥${{{v}.toFixed("
-            n += txt.count(old)
-            txt = txt.replace(old, new)
-        open(path, "w", encoding="utf-8").write(txt)
-        status = "✅" if n else "—（已是¥，无需改动）"
-        print(f"{status} {rel}: {n} 处")
-        total += n
-    print(f"\n完成。共替换 {total} 处。")
-    print("提示：需要【重启 pi】才生效；`pi update` 后重新运行本脚本。")
+	total = 0
+	for base, targets in groups():
+		print(f"\n# {base}")
+		for rel, vars in targets.items():
+			n = patch_file(base / rel, vars)
+			print(f"  {'✅' if n else '—'} {rel}: {n} 处")
+			total += n
+	print(f"\n完成。共替换 {total} 处。")
+	print("【重启 pi】生效；`pi update` / `pi update --extensions` 后重跑本脚本。")
 
 
 if __name__ == "__main__":
-    main()
+	main()
