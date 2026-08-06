@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
 """
-把 pi + pi-spark 的费用符号 $ 改为 ¥（仅显示）。
-幂等，可重复运行。`pi update` 或 `pi update --extensions` 后重跑一次即可。
+把 pi + pi-spark 的费用从美元($数值)真实换算成人民币(¥数值 × 汇率)。
+仅改显示，不动计费逻辑。幂等（从 .cny.bak 恢复原始再应用，可重复运行）。
+`pi update` / `pi update --extensions` 后重跑一次。
 
-自动探测 pi 安装目录（npm root -g），本机 / nvm / 任何机器通用。
+汇率默认 7.2，可用环境变量覆盖：CNY_RATE=7.25 python3 cny-display.py
 """
 import os
 import shutil
 import subprocess
-import sys
 from pathlib import Path
 
 HOME = Path.home()
+RATE = float(os.environ.get("CNY_RATE", "7.2"))  # USD → CNY
 
 
 def find_pi_dist():
-	"""经 npm root -g 找 pi 的 dist 目录。"""
 	try:
 		out = subprocess.run(
 			["npm", "root", "-g"], capture_output=True, text=True, check=True
@@ -26,7 +26,6 @@ def find_pi_dist():
 		return None
 
 
-# (base, {相对文件: [变量]})，替换 `$${var.toFixed(` → `¥${var.toFixed(`
 def groups():
 	pi_dist = find_pi_dist()
 	g = []
@@ -47,8 +46,7 @@ def groups():
 			)
 		)
 	else:
-		print("⚠️  找不到 pi dist（npm root -g 下无 pi-coding-agent）")
-	# pi-spark 的 formatCost（footer 用它显示 cost）
+		print("⚠️  找不到 pi dist")
 	spark = HOME / ".pi/agent/npm/node_modules/pi-spark/src"
 	if spark.is_dir():
 		g.append((spark, {"utils/format.ts": ["cost"]}))
@@ -57,16 +55,19 @@ def groups():
 
 def patch_file(path, vars):
 	if not path.exists():
-		print(f"  ⚠️ 缺失: {path}（pi/spark 版本变了？跳过）")
+		print(f"  ⚠️ 缺失: {path}（跳过）")
 		return 0
 	bak = path.with_suffix(path.suffix + ".cny.bak")
-	if not bak.exists():
-		shutil.copy(path, bak)
+	if bak.exists():
+		shutil.copy(bak, path)  # 恢复原始，保证幂等
+	else:
+		shutil.copy(path, bak)  # 首次备份
 	txt = path.read_text(encoding="utf-8")
 	n = 0
 	for v in vars:
+		# `$${var.toFixed(` → `¥${(var*RATE).toFixed(`
 		old = f"$${{{v}.toFixed("
-		new = f"¥${{{v}.toFixed("
+		new = f"¥${{({v}*{RATE}).toFixed("
 		n += txt.count(old)
 		txt = txt.replace(old, new)
 	path.write_text(txt, encoding="utf-8")
@@ -74,6 +75,7 @@ def patch_file(path, vars):
 
 
 def main():
+	print(f"汇率: 1 USD = {RATE} CNY（CNY_RATE 可改）")
 	total = 0
 	for base, targets in groups():
 		print(f"\n# {base}")
@@ -81,8 +83,7 @@ def main():
 			n = patch_file(base / rel, vars)
 			print(f"  {'✅' if n else '—'} {rel}: {n} 处")
 			total += n
-	print(f"\n完成。共替换 {total} 处。")
-	print("【重启 pi】生效；`pi update` / `pi update --extensions` 后重跑本脚本。")
+	print(f"\n完成。共替换 {total} 处。【重启 pi】生效。")
 
 
 if __name__ == "__main__":
