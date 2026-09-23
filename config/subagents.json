@@ -16,18 +16,6 @@
   "timeout_ms": 600000,
   "stall_timeout_ms": 180000,
   "model_profiles": {
-    "thinker": {
-      "model": "openai-codex/gpt-5.6-sol",
-      "effort": "high"
-    },
-    "coder": {
-      "model": "ppio/deepseek/deepseek-v4-flash-0731",
-      "effort": "medium"
-    },
-    "reviewer": {
-      "model": "openai-codex/gpt-5.6-sol",
-      "effort": "medium"
-    },
     "analyst": {
       "model": "ppio/deepseek/deepseek-v4-flash",
       "effort": "low"

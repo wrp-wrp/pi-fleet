@@ -4,6 +4,25 @@
   "defaultProvider": "zai-coding-cn",
   "defaultModel": "glm-5.2",
   "defaultThinkingLevel": "high",
+  "enabledModels": [
+    "ppio/deepseek/deepseek-v4-flash-0731",
+    "ppio/deepseek/deepseek-v4-pro",
+    "ppio/moonshotai/kimi-k3",
+    "ppio/zai-org/glm-5.2",
+    "zai-coding-cn/glm-5.3-highspeed",
+    "openai-codex/gpt-5.6-sol"
+  ],
+  "retry": {
+    "enabled": true,
+    "maxRetries": 3,
+    "baseDelayMs": 2000,
+    "provider": {
+      "timeoutMs": 3600000,
+      "maxRetries": 0,
+      "maxRetryDelayMs": 60000
+    }
+  },
+  "enableInstallTelemetry": false,
   "packages": [
     "npm:pi-subagents-j0k3r",
     "npm:pi-memory-extension",
